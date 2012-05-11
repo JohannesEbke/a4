@@ -61,6 +61,8 @@ def options(opt):
         help="Also look for snappy at the given path")
     opt.add_option('--with-boost', default=None,
         help="Also look for boost at the given path")
+    opt.add_option('--with-tcmalloc', default=None,
+        help="Use tcmalloc at the given path")
         
     opt.add_option('--enable-atlas-ntup', action="append", default=[],
         help="Build atlas ntup (e.g, photon, smwz)")
@@ -99,6 +101,14 @@ def configure(conf):
     # comment the following line for "production" run (not recommended)
     conf.env.append_value("CXXFLAGS", ["-g", "-Wall", "-Werror", "-ansi", "-fno-strict-aliasing"])
     conf.env.append_value("CXXFLAGS", ["-std=c++0x"])
+    if conf.options.with_tcmalloc:
+        where = conf.options.with_tcmalloc
+        conf.env.append_value("CXXFLAGS", ["-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free"])
+        conf.env.append_value("LDFLAGS", ["-L%s -ltcmalloc" % pjoin(where, "lib")])
+        conf.env.append_value('RPATH', pjoin(where, "lib"))
+        #conf.check(features='cxx cxxprogram', lib="tcmalloc", use="TCMALLOC", uselib_store="DEFLIB")
+
+    conf.env.append_value("LDFLAGS", ["-Wl,--as-needed"])
     conf.env.append_value("RPATH", [conf.env.LIBDIR])
     conf.env.CXXFLAGS_OPTFAST = "-O2"
     conf.env.CXXFLAGS_OPTSIZE = "-Os"
