@@ -4,6 +4,8 @@
 #include <unordered_set>
 
 #include <TTree.h>
+#include <TString.h>
+#include <TObjString.h>
 #include <TFile.h>
 
 #include <google/protobuf/message.h>
@@ -65,6 +67,7 @@ public:
         VALUE_TYPE(Double);
         VALUE_TYPE(Long64);
         VALUE_TYPE(ULong64);
+        VALUE_TYPE(TObjString);
         #undef VALUE_TYPE
     }
     
@@ -82,6 +85,11 @@ public:
     VALUE_TYPE(Double);
     VALUE_TYPE(Long64);
     VALUE_TYPE(ULong64);
+    TObjString TObjString_value_0;
+    std::vector<TObjString> TObjString_value_1;
+    std::vector<TObjString>* TObjString_value_1_p;
+    std::vector<std::vector<TObjString>> TObjString_value_2;
+    std::vector<std::vector<TObjString>>* TObjString_value_2_p;
     #undef VALUE_TYPE
     
     void set(const FieldContent& content) {
@@ -98,6 +106,7 @@ public:
                     type##_value_2.back().push_back(content);\
                 } \
                 break;
+        TObjString r;
         switch (_field->cpp_type())  {
             SET_TYPE(INT32, Int)
             SET_TYPE(INT64, Long64)
@@ -106,6 +115,17 @@ public:
             SET_TYPE(DOUBLE, Double)
             SET_TYPE(FLOAT, Float)
             SET_TYPE(BOOL, Bool)
+            case FieldDescriptor::CPPTYPE_STRING:
+                r.SetString(content.str().c_str());
+                if (_depth == 0)
+                    TObjString_value_0 = r;
+                else if (_depth == 1)
+                    TObjString_value_1.push_back(r);
+                else if (_depth == 2) {
+                    assert(TObjString_value_2.size());
+                    TObjString_value_2.back().push_back(r);
+                }
+                break;
             default: assert(false);
             //case FieldDescriptor::CPPTYPE_ENUM: 
             //case FieldDescriptor::CPPTYPE_STRING:
@@ -130,6 +150,7 @@ public:
             GET_ADDRESS(DOUBLE, Double)
             GET_ADDRESS(FLOAT, Float)
             GET_ADDRESS(BOOL, Bool)
+            GET_ADDRESS(STRING, TObjString)
             default: assert(false);
         }
         
@@ -156,8 +177,13 @@ public:
     }
     
     std::string root_class() {
-        if (_depth == 0)
-            return _prefix + "/" + root_type();
+        if (_depth == 0) {
+            if (_field->cpp_type() == FieldDescriptor::CPPTYPE_STRING) {
+                return "TObjString";
+            } else {
+                return _prefix + "/" + root_type();
+            }
+        }
         
         #define ROOT_TYPE(proto_type, type) \
             case FieldDescriptor::CPPTYPE_##proto_type: \
@@ -174,6 +200,7 @@ public:
             ROOT_TYPE(DOUBLE, "Double_t")
             ROOT_TYPE(FLOAT, "Float_t")
             ROOT_TYPE(BOOL, "Bool_t")
+            ROOT_TYPE(STRING, "TObjString")
             default: assert(false);
         }
         
@@ -183,7 +210,7 @@ public:
     void branch() {
         auto rc = root_class();
         //TBranch* br = NULL;
-        if (_depth == 0) {
+        if (_depth == 0 &&  _field->cpp_type() != FieldDescriptor::CPPTYPE_STRING) {
             _branch = _tree->Branch(_prefix.c_str(), get_address(), rc.c_str());
         } else {
             //tree->Bronch(_prefix.c_str(), rc.c_str(), get_address());
@@ -224,7 +251,12 @@ public:
             PUSH_BACK(DOUBLE, Double)
             PUSH_BACK(FLOAT, Float)
             PUSH_BACK(BOOL, Bool)
-            default: assert(false);
+            case FieldDescriptor::CPPTYPE_STRING:
+                TObjString_value_2.push_back(std::vector<TObjString>());
+                break;
+            default:
+                std::cerr << "Unknown cpp_type: " << _field->cpp_type() << std::endl;
+                assert(false);
         }
         #undef PUSH_BACK
     }
@@ -254,6 +286,12 @@ public:
             CLEAR(DOUBLE, Double)
             CLEAR(FLOAT, Float)
             CLEAR(BOOL, Bool)
+            case FieldDescriptor::CPPTYPE_STRING:
+                if (_depth == 1) \
+                    TObjString_value_1.clear(); \
+                if (_depth == 2) \
+                    TObjString_value_2.clear(); \
+                break;
             default:
                 // Nothing to clear.
                 return;
