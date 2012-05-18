@@ -37,20 +37,21 @@ class MessageTreeNode {
     int _depth;
     TTree* _tree;
     TBranch* _branch;
+    int _basketsize;
     
 public:
     
     // Root node (Whole event)
-    MessageTreeNode(TTree* tree)
+    MessageTreeNode(TTree* tree, int basketsize)
         : _prefix(), _field(NULL), _repeated(false), _depth(0), _tree(tree),
-          _branch(NULL)
+          _branch(NULL), _basketsize(basketsize)
     {
     
     }
     
     MessageTreeNode(const FieldDescriptor* field, uint32_t parent_depth,
-                    const std::string& prefix, TTree* tree)
-        : _prefix(prefix), _field(field), _tree(tree), _branch(NULL)
+                    const std::string& prefix, TTree* tree, int basketsize)
+        : _prefix(prefix), _field(field), _tree(tree), _branch(NULL), _basketsize(basketsize)
     {
         _repeated = field->is_repeated();
         _depth = parent_depth + (_repeated ? 1 : 0);
@@ -217,7 +218,7 @@ public:
             _branch = _tree->Branch(_prefix.c_str(), rc.c_str(), get_address());
         }
         
-        _branch->SetBasketSize(32768);
+        _branch->SetBasketSize(_basketsize);
         _branch->SetEntryOffsetLen(512);
         
         // The tree already has some entries, we need to put some into this
@@ -312,7 +313,7 @@ public:
             prefix += field->name();
         }
         
-        auto* treenode = new MessageTreeNode(field, _depth, prefix, _tree);
+        auto* treenode = new MessageTreeNode(field, _depth, prefix, _tree, _basketsize);
         shared<MessageTreeNode> child(treenode);
         _children[field->number()] = child;
         
@@ -369,14 +370,15 @@ class TreeFiller {
     shared<MessageTreeNode> _top_node;
 
 public:
-    TreeFiller(const Descriptor* descriptor) {
+
+    TreeFiller(const Descriptor* descriptor, int basketsize) {
         
         _root_tree = new TTree(descriptor->name().c_str(), 
                                descriptor->full_name().c_str());
         
         _root_tree->SetAutoFlush();
         
-        _top_node.reset(new MessageTreeNode(_root_tree));
+        _top_node.reset(new MessageTreeNode(_root_tree, basketsize));
         
         make_tree(std::unordered_set<const FieldDescriptor*>(),
                   _top_node, _root_tree, descriptor);
@@ -455,6 +457,9 @@ public:
 
 class a42rootProcessor : public a4::process::Processor {
 public:
+
+    int basket_size;
+
     std::map<std::string, shared<TreeFiller>> class_map;
     
     TFile* f;
@@ -469,7 +474,7 @@ public:
         
         auto class_name = m->message()->GetDescriptor()->full_name();
         if (class_map.find(class_name) == class_map.end()) {
-            class_map[class_name].reset(new TreeFiller(m->descriptor()));
+            class_map[class_name].reset(new TreeFiller(m->descriptor(), basket_size));
         }
         
         auto& tree_filler = *class_map[class_name];
@@ -487,7 +492,7 @@ public:
 class A2RConfig : public a4::process::ConfigurationOf<a42rootProcessor> {
     public:
         std::string filename;
-        int processor_count, compression_level;
+        int processor_count, compression_level, basket_size;
         
         A2RConfig() : processor_count(0) {};
 
@@ -497,12 +502,15 @@ class A2RConfig : public a4::process::ConfigurationOf<a42rootProcessor> {
                 "ROOT output file");
             opt("compression-level,C", po::value(&compression_level)->default_value(1), 
                 "ROOT compression level");
+            opt("basket-size", po::value(&basket_size)->default_value(32768), 
+                "ROOT basket size");
         }
 
         virtual void setup_processor(a42rootProcessor& g) {
             assert(processor_count++ == 0);
             g.f = new TFile(filename.c_str(), "RECREATE");
             g.f->SetCompressionLevel(compression_level);
+            g.basket_size = basket_size;
         }
 };
 
