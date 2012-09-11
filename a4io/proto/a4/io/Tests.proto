@@ -9,6 +9,30 @@ message TestEventExt {
   }
 }
 
+message TestObject
+{
+    enum TestObjectType
+    {
+        TestElectron = 1;
+        TestMuon = 2;
+        TestJet = 3;
+        TestNeutrino = 4;
+    }
+    optional TestObjectType type = 1;
+    optional double vx = 2; 
+    optional double vy = 3; 
+    optional double vz = 4; 
+    optional double vt = 5; 
+
+    optional double d1 = 6; 
+    optional double d2 = 7; 
+    optional double d3 = 8; 
+    optional double d4 = 9; 
+    optional double d5 = 10; 
+    optional double d6 = 11; 
+
+}
+
 message TestEvent
 {
     option (major_version) = "v2011.10";
@@ -17,6 +41,107 @@ message TestEvent
 
     optional int32 event_number = 1;
     optional double event_data = 2;
+
+    repeated TestObject objects00 = 10;
+    repeated TestObject objects01 = 11;
+    repeated TestObject objects02 = 12;
+    repeated TestObject objects03 = 13;
+    repeated TestObject objects04 = 14;
+    repeated TestObject objects05 = 15;
+    repeated TestObject objects06 = 16;
+    repeated TestObject objects07 = 17;
+    repeated TestObject objects08 = 18;
+    repeated TestObject objects09 = 19;
+    repeated TestObject objects10 = 20;
+    repeated TestObject objects11 = 21;
+    repeated TestObject objects12 = 22;
+    repeated TestObject objects13 = 23;
+    repeated TestObject objects14 = 24;
+    repeated TestObject objects15 = 25;
+    repeated TestObject objects16 = 26;
+    repeated TestObject objects17 = 27;
+    repeated TestObject objects18 = 28;
+    repeated TestObject objects19 = 29;
+    repeated TestObject objects20 = 30;
+    repeated TestObject objects21 = 31;
+    repeated TestObject objects22 = 32;
+    repeated TestObject objects23 = 33;
+    repeated TestObject objects24 = 34;
+    repeated TestObject objects25 = 35;
+    repeated TestObject objects26 = 36;
+    repeated TestObject objects27 = 37;
+    repeated TestObject objects28 = 38;
+    repeated TestObject objects29 = 39;
+    repeated TestObject objects30 = 40;
+    repeated TestObject objects31 = 41;
+    repeated TestObject objects32 = 42;
+    repeated TestObject objects33 = 43;
+    repeated TestObject objects34 = 44;
+    repeated TestObject objects35 = 45;
+    repeated TestObject objects36 = 46;
+    repeated TestObject objects37 = 47;
+    repeated TestObject objects38 = 48;
+    repeated TestObject objects39 = 49;
+    repeated TestObject objects40 = 50;
+    repeated TestObject objects41 = 51;
+    repeated TestObject objects42 = 52;
+    repeated TestObject objects43 = 53;
+    repeated TestObject objects44 = 54;
+    repeated TestObject objects45 = 55;
+    repeated TestObject objects46 = 56;
+    repeated TestObject objects47 = 57;
+    repeated TestObject objects48 = 58;
+    repeated TestObject objects49 = 59;
+    repeated TestObject objects50 = 60;
+    repeated TestObject objects51 = 61;
+    repeated TestObject objects52 = 62;
+    repeated TestObject objects53 = 63;
+    repeated TestObject objects54 = 64;
+    repeated TestObject objects55 = 65;
+    repeated TestObject objects56 = 66;
+    repeated TestObject objects57 = 67;
+    repeated TestObject objects58 = 68;
+    repeated TestObject objects59 = 69;
+    repeated TestObject objects60 = 70;
+    repeated TestObject objects61 = 71;
+    repeated TestObject objects62 = 72;
+    repeated TestObject objects63 = 73;
+    repeated TestObject objects64 = 74;
+    repeated TestObject objects65 = 75;
+    repeated TestObject objects66 = 76;
+    repeated TestObject objects67 = 77;
+    repeated TestObject objects68 = 78;
+    repeated TestObject objects69 = 79;
+    repeated TestObject objects70 = 80;
+    repeated TestObject objects71 = 81;
+    repeated TestObject objects72 = 82;
+    repeated TestObject objects73 = 83;
+    repeated TestObject objects74 = 84;
+    repeated TestObject objects75 = 85;
+    repeated TestObject objects76 = 86;
+    repeated TestObject objects77 = 87;
+    repeated TestObject objects78 = 88;
+    repeated TestObject objects79 = 89;
+    repeated TestObject objects80 = 90;
+    repeated TestObject objects81 = 91;
+    repeated TestObject objects82 = 92;
+    repeated TestObject objects83 = 93;
+    repeated TestObject objects84 = 94;
+    repeated TestObject objects85 = 95;
+    repeated TestObject objects86 = 96;
+    repeated TestObject objects87 = 97;
+    repeated TestObject objects88 = 98;
+    repeated TestObject objects89 = 99;
+    repeated TestObject objects90 = 100;
+    repeated TestObject objects91 = 101;
+    repeated TestObject objects92 = 102;
+    repeated TestObject objects93 = 103;
+    repeated TestObject objects94 = 104;
+    repeated TestObject objects95 = 105;
+    repeated TestObject objects96 = 106;
+    repeated TestObject objects97 = 107;
+    repeated TestObject objects98 = 108;
+    repeated TestObject objects99 = 109;
     
     extensions 100000 to max;
 }
