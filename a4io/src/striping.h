@@ -13,6 +13,10 @@ using a4::io::FieldContent;
 
 class ColumnWriter {
 public:
+    ColumnWriter()
+        : _parent(NULL), _repeated_depth(0), _fd(NULL), _version(0), _definition_level(0)
+    {}
+
     ColumnWriter(ColumnWriter* p, int d, const FieldDescriptor* fd, int v, int dl)
         : _parent(p), _repeated_depth(d), _fd(fd), _version(v), _definition_level(dl)
     {

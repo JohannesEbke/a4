@@ -9,9 +9,19 @@
 #include <a4/input_stream.h>
 
 #include "striping.h"
+#include "destriping.h"
 
 using namespace std;
 using namespace a4::io;
+
+void writer_to_reader(std::vector<FieldReader*> &readers, const ColumnWriter& wr, FieldReader* parent = NULL) {
+    auto r = new FieldReader(parent, wr._fd);
+    readers.push_back(r);
+    foreach (auto& w, wr._writers) {
+        writer_to_reader(readers, *w.second, r);
+    }
+}
+
 
 int main(int argc, char ** argv) {
 
@@ -49,6 +59,57 @@ int main(int argc, char ** argv) {
     ColumnWriter test_writer;
     dissect_record(doc1, test_writer);
     dissect_record(doc2, test_writer);
-    std::cout << test_writer.DebugString() << std::endl;
+    //std::cout << test_writer.DebugString() << std::endl;
+    test_writer.Dump();
 
+    ColumnReader test_reader;
+    writer_to_reader(test_reader.readers, test_writer);
+    test_reader.root_field_reader = test_reader.readers[0];
+    test_reader.make_fsm();
+
+
+    foreach(auto &rd, test_reader.readers) {
+        if (rd->_fd and rd->_fd->full_name() == "a4.io.TestName.Url") {
+            std::cout << "written " << rd->_fd->full_name() << std::endl;
+            rd->_data.push_back(ColumnLine(0,2,"http://A"));
+            rd->_data.push_back(ColumnLine(0, 2, "http://A"));
+            rd->_data.push_back(ColumnLine(1, 2, "http://B"));
+            rd->_data.push_back(ColumnLine(1, 1 , "" ));
+            rd->_data.push_back(ColumnLine(0, 2, "http://C"));
+        }
+        if (rd->_fd and rd->_fd->full_name() == "a4.io.TestLanguage.Country") {
+            std::cout << "written " << rd->_fd->full_name() << std::endl;
+            rd->_data.push_back(ColumnLine(0, 3, "us"));
+            rd->_data.push_back(ColumnLine(2, 2 , "" ));
+            rd->_data.push_back(ColumnLine(1, 1 , "" ));
+            rd->_data.push_back(ColumnLine(1, 3, "gb"));
+        }
+        if (rd->_fd and rd->_fd->full_name() == "a4.io.TestLanguage.Code") {
+            std::cout << "written " << rd->_fd->full_name() << std::endl;
+            rd->_data.push_back(ColumnLine(0, 2, "en-us"));
+            rd->_data.push_back(ColumnLine(2, 2, "en"));
+            rd->_data.push_back(ColumnLine(1, 1 , "" ));
+            rd->_data.push_back(ColumnLine(1, 2, "en-gb"));
+        }
+        if (rd->_fd and rd->_fd->full_name() == "a4.io.TestLinks.Backward") {
+            std::cout << "written " << rd->_fd->full_name() << std::endl;
+            rd->_data.push_back(ColumnLine(0, 1 , "" ));
+            rd->_data.push_back(ColumnLine(0, 2, "10"));
+            rd->_data.push_back(ColumnLine(1, 2, "30"));
+        }
+        if (rd->_fd and rd->_fd->full_name() == "a4.io.TestLinks.Forward") {
+            std::cout << "written " << rd->_fd->full_name() << std::endl;
+            rd->_data.push_back(ColumnLine(0, 2, "20"));
+            rd->_data.push_back(ColumnLine(1, 2, "40"));
+            rd->_data.push_back(ColumnLine(1, 2, "60"));
+            rd->_data.push_back(ColumnLine(0, 2, "80"));
+        }
+        if (rd->_fd and rd->_fd->full_name() == "a4.io.TestDocument.DocId") {
+            std::cout << "written " << rd->_fd->full_name() << std::endl;
+            rd->_data.push_back(ColumnLine(0, 0, "10"));
+            rd->_data.push_back(ColumnLine(0, 0, "20"));
+        }
+    }
+
+    std::cout << AssembleRecord(&test_reader) << std::endl;
 }
