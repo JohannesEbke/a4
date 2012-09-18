@@ -24,7 +24,7 @@ int main(int argc, char ** argv) {
             shared<const A4Message> md = r.current_metadata();
             assert(md);
             assert(te->event_number() / 1000 == md->as<TestMetaData>()->meta_data());
-            //std::cout << "TestEvent: " << te->event_number() << std::endl;
+            std::cout << "Event number: " << te->event_number() << std::endl;
             cnt++;
         }
     }
