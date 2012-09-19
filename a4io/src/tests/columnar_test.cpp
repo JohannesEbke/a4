@@ -16,10 +16,12 @@ using namespace a4::io;
 
 void writer_to_reader(std::vector<FieldReader*> &readers, const ColumnWriter& wr, FieldReader* parent = NULL) {
     auto r = new FieldReader(parent, wr._fd);
+    std::cout << "added " << r->name() << "{" << std::endl;
     readers.push_back(r);
     foreach (auto& w, wr._writers) {
         writer_to_reader(readers, *w.second, r);
     }
+    std::cout << "}" << std::endl;
 }
 
 
@@ -71,7 +73,6 @@ int main(int argc, char ** argv) {
     foreach(auto &rd, test_reader.readers) {
         if (rd->_fd and rd->_fd->full_name() == "a4.io.TestName.Url") {
             std::cout << "written " << rd->_fd->full_name() << std::endl;
-            rd->_data.push_back(ColumnLine(0,2,"http://A"));
             rd->_data.push_back(ColumnLine(0, 2, "http://A"));
             rd->_data.push_back(ColumnLine(1, 2, "http://B"));
             rd->_data.push_back(ColumnLine(1, 1 , "" ));
@@ -112,4 +113,8 @@ int main(int argc, char ** argv) {
     }
 
     std::cout << AssembleRecord(&test_reader) << std::endl;
+    std::cout << "----- v original ----- ^ decoded -------" << std::endl;
+    std::cout << doc1.DebugString() << std::endl;
+
+
 }
