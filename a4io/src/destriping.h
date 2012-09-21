@@ -79,7 +79,8 @@ class FieldReader {
         if (_fd == NULL) {
             return "root";
         } else {
-            return _fd->full_name();
+            return _parent->name() + "." + _fd->name();
+            //return _fd->full_name();
         }
     }
     std::string short_name() {
@@ -90,12 +91,13 @@ class FieldReader {
         }
     }
     bool needs_braces() {
+        if (not _fd) return true;
         return _fd->type() == FieldDescriptor::TYPE_MESSAGE;
     }
 };
 
 #define FSM_END (FieldReader*)0x1
-FieldReader * last_reader;
+FieldReader * last_reader; // last reader where value was read. Convention: The <tag> of this reader must be OPEN
 std::stringstream record;
 
 
@@ -137,8 +139,10 @@ class ColumnReader {
                 barrier_level = lca->_max_repetition_level;
                 std::cout << "... the lca between this and the barrier is " << lca->name() << " and its level is " << barrier_level << std::endl;
             }
-            for(int j = i-1; j >= 0; j--) {
+            //for(int j = i-1; j >= 0; j--) {
             //for(int j = 0; j < i; j++) {
+            for(int j = i; j >= 0; j--) {
+            //for(int j = 0; j <= i; j++) {
                 if (readers[j]->_max_repetition_level > barrier_level) {
                     std::cout << "... Reader " << readers[j]->name() << " with its level " << readers[j]->_max_repetition_level 
                               << " has climbed the barrier!" << std::endl;
@@ -165,7 +169,7 @@ class ColumnReader {
             if (kv.first.first->_fd == NULL) {
                 std::cout << kv.first.first;
             } else {
-                std::cout << kv.first.first->_fd->full_name();
+                std::cout << kv.first.first->name();
             }
             std::cout << ", " << kv.first.second << " --> ";;
             if (kv.second == FSM_END) {
@@ -173,7 +177,7 @@ class ColumnReader {
             } else if (kv.second->_fd == NULL) {
                 std::cout << kv.second;
             } else {
-                std::cout << kv.second->_fd->full_name();
+                std::cout << kv.second->name();
             }
             std::cout << std::endl;
         }
@@ -182,7 +186,11 @@ class ColumnReader {
 };
         
 void end_nested_records(FieldReader* r, int level) {
-    if (not r->needs_braces()) return;
+    std::cout << "end_nested_records of " << r->name() << ":" << r->level() << std::endl;
+    if (not r->needs_braces()) {
+        record << "\"" << std::endl;
+        return;
+    }
     for (int i = 0; i < level; i++) record << " ";
     if (r)
         record << "} " << std::endl;
@@ -191,72 +199,64 @@ void end_nested_records(FieldReader* r, int level) {
 }
 
 void start_nested_records(FieldReader* r, int level) {
-    if (not r->needs_braces()) return;
+    std::cout << "start_nested_records of " << r->name() << ":" << r->level() << std::endl;
     for (int i = 0; i < level; i++) record << " ";
-    record << r->short_name() << "{" << std::endl;
+    if (not r->needs_braces()) {
+        record << r->short_name() << ": \"";
+    } else {
+        record << r->short_name() << "{" << std::endl;
+    }
 }
-
 
 void MoveToLevel(int newLevel, FieldReader * nextReader) {
-    std::cout << "Moving from " << last_reader->name() << " to level " << newLevel << " of the reader " << nextReader->name() << std::endl;
-    FieldReader * r1 = last_reader;
-    int current_level = last_reader->level();
-    std::cout << "current level: " << current_level << " next reader level " << nextReader->level() << std::endl;
-    // go down to level of next reader
-    while (current_level > nextReader->level()) {
-        end_nested_records(r1, current_level);
-        r1 = r1->_parent;
-        current_level--;
-    }
-    // go down in target reader
-    FieldReader * r2 = nextReader;
-    while (current_level < r2->level()) {
-        r2 = r2->_parent;
-    }
-    // go down in parallel to first common ancestor
-    while(r1 != r2) {
-        end_nested_records(r1, current_level);
-        r1 = r1->_parent;
-        r2 = r2->_parent;
-        current_level--;
-    }
-    // go up to next_reader
-    FieldReader * r;
-    int next_level = nextReader->level();
-    while (current_level < next_level) {
-        current_level++;
-        r = nextReader;
-        for (int i = 0; i < (next_level - current_level); i++) r = r->_parent;
-        if (current_level == newLevel) last_reader = r;
-        start_nested_records(r, current_level);
-    }
-}
-
-void ReturnToLevel(int newLevel) {
-    //std::cout << "returning to " << newLevel << " last reader " << last_reader <<std::endl;
+    auto* lca = lowest_common_ancestor(last_reader, nextReader);
+    int via_level = lca->level(); 
     FieldReader * r = last_reader;
     int current_level = last_reader->level();
-    //std::cout << "from level " << current_level << std::endl;
+    std::cout << "Moving from " << last_reader->name() << " to level " << newLevel << " of the reader " 
+              << nextReader->name() << " via " << lca->name() << " level " << via_level << std::endl;
+    
+    while (r->level() > via_level) {
+        end_nested_records(r, r->level());
+        r = r->_parent;
+    }
+    current_level = r->level();
+    while (r->level() < newLevel) {
+        current_level++;
+        r = nextReader;
+        for (int i = 0; i < (nextReader->level() - current_level); i++) r = r->_parent;
+        start_nested_records(r, r->level());
+    }
+    last_reader = r;
+}
+
+void ReturnToLevel(int newLevel, FieldReader * nextReader) {
+    FieldReader * r = last_reader;
+    int current_level = last_reader->level();
+    std::cout << "ReturnToLevel " << current_level << " --> " << newLevel << std::endl;
     while (current_level > newLevel) {
         end_nested_records(r, current_level);
         r = r->_parent;
         current_level--;
     }
-    last_reader = r;
+    if (current_level == newLevel) {
+        end_nested_records(r, current_level);
+        //last_reader = r->_parent;
+    }
+    last_reader = nextReader->_parent;
 }
 
-// Reuse msg
-//template <class MessageType>
 std::string AssembleRecord(ColumnReader * creaders) {
     record.clear();
     last_reader = creaders->root_field_reader;
+    start_nested_records(creaders->root_field_reader, 0);
     FieldReader* reader = creaders->readers[0];
     std::cout << "Starting with reader " << reader->name() << std::endl;
     while (reader != FSM_END) {
-        std::cout << "Looking at reader " << reader->name() << std::endl;
+        std::cout << "Looking at reader " << reader->name() << " which has level " << reader->level() << std::endl;
         if (not reader->has_data()) {
-            std::cout << "No data left in reader, moving to level " << reader->level() << std::endl;
-            MoveToLevel(reader->level(), reader);
+            //std::cout << "No data left in reader, moving to level " << reader->level() << std::endl;
+            //MoveToLevel(reader->level(), reader);
             reader = creaders->fsm_transitions[std::make_pair(reader, 0)];
             continue;
         }
@@ -264,20 +264,26 @@ std::string AssembleRecord(ColumnReader * creaders) {
         std::cout << "Read line r:" << l.repetition_level << " l:" << l.definition_level << " v:" << l.value << std::endl;
         bool value_is_not_null = (l.definition_level == reader->definition_level());
         if (value_is_not_null) {
-            std::cout << "value is not null, moving to level " << reader->definition_level() << std::endl;
-            MoveToLevel(reader->definition_level(), reader);
-            for (int i = 0; i < reader->level(); i++) record << " ";
-            record << reader->short_name()  << ": " << l.value << std::endl;
-        } else {
-            std::cout << "value is null, moving to level " << reader->level() << std::endl;
+            std::cout << "value is not null, moving to level " << reader->level() << std::endl;
+            //MoveToLevel(reader->definition_level(), reader);
             MoveToLevel(reader->level(), reader);
+            //for (int i = 0; i < reader->level(); i++) record << " ";
+            //record << reader->short_name()  << ": " << l.value << std::endl;
+            record << l.value;
+           // << std::endl;
+            std::cout << "Value: " << reader->short_name()  << ": " << l.value << std::endl;
+        } else {
+            std::cout << "Value is null!" << std::endl;
+            MoveToLevel(l.definition_level, reader);
+            //MoveToLevel(reader->level(), reader);
+            //MoveToLevel(reader->definition_level(), reader);
         }
 
-        //std::cout << "FSM - " << reader->name() << " r: " << reader->peek_repetition_level() << std::endl;
-        //reader = creaders->fsm_transitions[std::make_pair(reader, reader->peek_repetition_level())]; // EXPERIMENT
+        std::cout << "FSM - " << reader->name() << " r: " << reader->peek_repetition_level() << std::endl;
+        reader = creaders->fsm_transitions[std::make_pair(reader, reader->peek_repetition_level())]; // EXPERIMENT
 
-        std::cout << "FSM - " << reader->name() << " r: " << l.repetition_level << std::endl;
-        reader = creaders->fsm_transitions[std::make_pair(reader, l.repetition_level)];
+        //std::cout << "FSM - " << reader->name() << " r: " << l.repetition_level << std::endl;
+        //reader = creaders->fsm_transitions[std::make_pair(reader, l.repetition_level)];
 
         if (reader == FSM_END) {
             std::cout << "Hit FSM END!" << std::endl;
@@ -285,10 +291,12 @@ std::string AssembleRecord(ColumnReader * creaders) {
         }
         std::cout << reader << std::endl;
         std::cout << "FSM transition to reader " << reader->name() << ", returning to level " << reader->definition_level() << std::endl;
-        ReturnToLevel(reader->definition_level());
+        //ReturnToLevel(reader->definition_level());
+        ReturnToLevel(reader->level(), reader);
+        //ReturnToLevel(l.definition_level);
     }
     std::cout << "Finished record, returning to level 0." << std::endl;
-    ReturnToLevel(0); //End all nested records (implicit)
+    ReturnToLevel(0, creaders->root_field_reader); //End all nested records (implicit)
     return record.str();
 }
 

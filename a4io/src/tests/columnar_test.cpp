@@ -65,12 +65,12 @@ int main(int argc, char ** argv) {
     test_writer.Dump();
 
     ColumnReader test_reader;
-    writer_to_reader(test_reader.readers, test_writer);
-    test_reader.root_field_reader = test_reader.readers[0];
-    test_reader.make_fsm();
 
+    std::vector<FieldReader*> readers;
+    writer_to_reader(readers, test_writer);
 
-    foreach(auto &rd, test_reader.readers) {
+    foreach(auto &rd, readers) {
+        test_reader.readers.push_back(rd);
         if (rd->_fd and rd->_fd->full_name() == "a4.io.TestName.Url") {
             std::cout << "written " << rd->_fd->full_name() << std::endl;
             rd->_data.push_back(ColumnLine(0, 2, "http://A"));
@@ -111,10 +111,16 @@ int main(int argc, char ** argv) {
             rd->_data.push_back(ColumnLine(0, 0, "20"));
         }
     }
+    
+    test_reader.root_field_reader = test_reader.readers[0];
+    test_reader.make_fsm();
 
+    std::cout << AssembleRecord(&test_reader) << std::endl;
+    std::cout << "----- " << std::endl;
     std::cout << AssembleRecord(&test_reader) << std::endl;
     std::cout << "----- v original ----- ^ decoded -------" << std::endl;
     std::cout << doc1.DebugString() << std::endl;
+    std::cout << doc2.DebugString() << std::endl;
 
 
 }
