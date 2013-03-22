@@ -196,7 +196,8 @@ def configure(conf):
 
     conf.to_log("Final environment:")
     conf.to_log(conf.env)
-    conf.write_config_header('a4io/src/a4/config.h')
+    conf.write_config_header('a4io/src/a4/config.h', remove=False)
+    conf.write_config_header('a4io/src/config.h')
 
 def check_cxx11_features(conf):
     
