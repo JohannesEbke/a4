@@ -8,7 +8,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "base_compressed_streams.h"
+#include "zerocc/compressed_stream.h"
+#include "zerocc/block_wrappers.h"
+
 #include "proto_class_pool.h"
 #include "zero_copy_resource.h"
 
@@ -111,7 +113,7 @@ class InputStreamA4Impl : public a4::io::InputStreamImpl
 
     private:
         UNIQUE<ZeroCopyStreamResource> _raw_in;
-        UNIQUE<BaseCompressedInputStream> _compressed_in;
+        UNIQUE<zerocc::AbstractCompressedInputStream> _compressed_in;
         shared<google::protobuf::io::CodedInputStream> _coded_in;
         shared<ProtoClassPool> _current_class_pool;
 

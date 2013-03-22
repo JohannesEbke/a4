@@ -1,0 +1,3 @@
+[submodule "a4io/src/zerocc"]
+	path = a4io/src/zerocc
+	url = https://github.com/JohannesEbke/protobuf-zerocopy-compression

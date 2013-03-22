@@ -25,12 +25,15 @@ namespace protobuf {
 }
 }
 
+namespace zerocc {
+    class AbstractCompressedOutputStream;
+}
 
 namespace a4 {
 namespace io {
 
     class A4Message;
-    class BaseCompressedOutputStream;
+
 
     /// Class to write Messages to files or streams.
     /// To write a message belonging to a certain class
@@ -95,7 +98,7 @@ namespace io {
             shared<google::protobuf::io::ZeroCopyOutputStream> _raw_out;
             shared<google::protobuf::io::FileOutputStream> _file_out;
             
-            UNIQUE<BaseCompressedOutputStream> _compressed_out;
+            UNIQUE<zerocc::AbstractCompressedOutputStream> _compressed_out;
             UNIQUE<google::protobuf::io::CodedOutputStream> _coded_out;
 
 

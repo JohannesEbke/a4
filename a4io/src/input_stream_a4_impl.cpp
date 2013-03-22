@@ -413,18 +413,18 @@ bool InputStreamA4Impl::start_compression(const StartCompressedSection& cs) {
     _coded_in.reset();
 
     if (cs.compression() == StartCompressedSection_Compression_ZLIB) {
-        _compressed_in.reset(new GzipInputStream(_raw_in.get(), GzipInputStream::ZLIB));
+        _compressed_in.reset(new zerocc::GzipInputStream(_raw_in.get(), zerocc::GzipInputStream::ZLIB));
     } else if (cs.compression() == StartCompressedSection_Compression_GZIP) {
-        _compressed_in.reset(new GzipInputStream(_raw_in.get(), GzipInputStream::GZIP));
+        _compressed_in.reset(new zerocc::GzipInputStream(_raw_in.get(), zerocc::GzipInputStream::GZIP));
     } else if (cs.compression() == StartCompressedSection_Compression_SNAPPY) {
 #ifdef HAVE_SNAPPY
-        _compressed_in.reset(new SnappyInputStream(_raw_in.get()));
+        _compressed_in.reset(new zerocc::SnappyInputStream(_raw_in.get()));
 #else
         TERMINATE("This file uses compression by the 'Snappy' library, "
               "which was not compiled in!");
 #endif
     } else if (cs.compression() == StartCompressedSection_Compression_LZ4) {
-        _compressed_in.reset(new LZ4InputStream(_raw_in.get()));
+        _compressed_in.reset(new zerocc::LZ4InputStream(_raw_in.get()));
     } else {
         ERROR("Unknown compression type: ", cs.compression());
         return false;

@@ -71,6 +71,9 @@ def options(opt):
 def configure(conf):
     import os
     from os.path import join as pjoin, exists
+    if not exists("a4io/src/zerocc/test.cc"):
+        if os.system("git submodule update --init") != 0:
+            conf.fatal("Could not initialize necessary submodules!")
     conf.load('compiler_c compiler_cxx python')
     conf.load('boost unittest_gtest libtool compiler_magic check_with platforms',
               tooldir="common/waf")
@@ -505,6 +508,8 @@ def add_pack(bld, pack, other_packs=[], use=[]):
     proto_h = [f for f in proto_targets if f.suffix() == ".h"]
     proto_py = [f for f in proto_targets if f.suffix() == ".py"]
     lib_cppfiles = bld.path.ant_glob("%s/src/*.cpp" % pack)
+    if pack == "a4io":
+        lib_cppfiles.extend(x for x in bld.path.ant_glob("a4io/src/zerocc/*.cc") if not str(x) == "test.cc")
 
     # Find applications and tests to be built
     appdir = "%s/src/apps" % pack
@@ -536,6 +541,8 @@ def add_pack(bld, pack, other_packs=[], use=[]):
     to_use = ["DEFLIB", "PROTOBUF", "BOOST"] + use
     to_use += [pjoin(p,p) for p in other_packs]
     incs = ["%s/src" % p for p in [pack] + other_packs]
+    if pack == "a4io":
+        incs.append("a4io/src/zerocc")
     libnm = pjoin(pack, pack)
 
     # Build objects

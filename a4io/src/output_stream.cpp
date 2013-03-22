@@ -22,7 +22,8 @@
 #include <a4/io/A4Stream.pb.h>
 
 #include "gzip_stream.h"
-#include "compressed_stream.h"
+#include "zerocc/compressed_stream.h"
+#include "zerocc/block_wrappers.h"
 
 using std::string;
 using google::protobuf::io::FileOutputStream;
@@ -209,7 +210,7 @@ bool OutputStream::start_compression() {
     case SNAPPY:
     {
 #ifdef HAVE_SNAPPY
-        _compressed_out.reset(new SnappyOutputStream(_raw_out.get()));
+        _compressed_out.reset(new zerocc::SnappyOutputStream(_raw_out.get()));
 #else
         FATAL("Snappy compression not compiled in!");
 #endif
@@ -217,15 +218,15 @@ bool OutputStream::start_compression() {
     }
     case LZ4:
     {
-        _compressed_out.reset(new LZ4OutputStream(_raw_out.get()));
+        _compressed_out.reset(new zerocc::LZ4OutputStream(_raw_out.get()));
         break;
     }
     case ZLIB:
     {
-        a4::io::GzipOutputStream::Options o;
-        o.format = a4::io::GzipOutputStream::ZLIB;
+        zerocc::GzipOutputStream::Options o;
+        o.format = zerocc::GzipOutputStream::ZLIB;
         o.compression_level = _compression_level;
-        _compressed_out.reset(new a4::io::GzipOutputStream(_raw_out.get(), o));
+        _compressed_out.reset(new zerocc::GzipOutputStream(_raw_out.get(), o));
         break;
     }
     default:
